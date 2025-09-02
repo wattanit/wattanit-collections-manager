@@ -330,6 +330,12 @@ impl CombinedBookSearcher {
                                     }
                                 };
                                 
+                                // Display pre-flight confirmation
+                                if !self.show_preflight_confirmation(&book, &selected_categories, &final_synopsis, is_ebook)? {
+                                    println!("Operation cancelled by user.");
+                                    return Ok(Some(book));
+                                }
+                                
                                 // Create Baserow entry with all the collected data
                                 match self.create_baserow_entry(&book, &selected_categories, &final_synopsis, &categories, is_ebook).await {
                                     Ok(entry_id) => {
@@ -493,5 +499,55 @@ impl CombinedBookSearcher {
         let created_entry = self.baserow_client.create_media_entry(entry).await?;
         
         Ok(created_entry.id)
+    }
+
+    fn show_preflight_confirmation(
+        &self,
+        book: &BookResult,
+        selected_categories: &[String],
+        synopsis: &str,
+        is_ebook: bool,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
+        println!("\n==================================================");
+        println!("               📖 CONFIRMATION SUMMARY");
+        println!("==================================================");
+        
+        // Book details
+        println!("Title:     {}", book.get_full_title());
+        println!("Author:    {}", book.get_all_authors());
+        
+        // ISBN if available
+        if let Some(isbn) = match book {
+            BookResult::Google(google_book) => google_book.get_isbn_13().or_else(|| google_book.get_isbn_10()),
+            BookResult::OpenLibrary(ol_book) => ol_book.get_best_isbn(),
+        } {
+            println!("ISBN:      {}", isbn);
+        }
+        
+        // Media type
+        println!("Type:      {}", if is_ebook { "📱 Ebook" } else { "📚 Physical Book" });
+        
+        // Categories
+        println!("Categories: {}", selected_categories.join(", "));
+        
+        // Synopsis (truncated for display)
+        let display_synopsis = if synopsis.len() > 300 {
+            format!("{}...", &synopsis[..297])
+        } else {
+            synopsis.to_string()
+        };
+        println!("Synopsis:  {}", display_synopsis);
+        
+        println!("==================================================");
+        
+        // Get user confirmation
+        use dialoguer::{theme::ColorfulTheme, Confirm};
+        
+        let confirmation = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Add this book to your library?")
+            .default(false)
+            .interact()?;
+        
+        Ok(confirmation)
     }
 }

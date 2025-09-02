@@ -137,10 +137,10 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 12. **Baserow Entry Creation**  
     Map all data to Baserow fields via API with ebook/physical classification (FR-07).
 
-[] 13. **Pre-flight Confirmation**  
+[✓] 13. **Pre-flight Confirmation**  
     Add summary + `[y/N]` prompt before database write (FR-08).
 
-[] 14. **User Feedback**  
+[✓] 14. **User Feedback**  
     Add step-by-step logging (e.g., "Fetching data...") (NFR-03).
 
 [✓] 15. **Multi-LLM Architecture**  
@@ -151,9 +151,7 @@ Environment variables override YAML configuration values. This allows you to:
 
 ## Next Steps
 
-1. Add pre-flight confirmation before database writes  
-2. Enhance user feedback with step-by-step logging
-3. Add cover image downloading and processing as final enhancement
+1. Add cover image downloading and processing as final enhancement
 
 ## Usage
 
