@@ -24,6 +24,36 @@ pub struct Category {
     pub fields: HashMap<String, serde_json::Value>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct MediaEntry {
+    #[serde(rename = "Title")]
+    pub title: String,
+    #[serde(rename = "Author")]
+    pub author: String,
+    #[serde(rename = "ISBN")]
+    pub isbn: Option<String>,
+    #[serde(rename = "Synopsis")]
+    pub synopsis: String,
+    #[serde(rename = "Category")]
+    pub category: Vec<u64>, // Array of category IDs
+    #[serde(rename = "Read")]
+    pub read: bool,
+    #[serde(rename = "Rating")]
+    pub rating: u32,
+    #[serde(rename = "Media Type")]
+    pub media_type: Option<u64>,
+    #[serde(rename = "Location", skip_serializing_if = "Vec::is_empty")]
+    pub location: Vec<u64>, // Array of location IDs - left empty for manual entry
+    // Cover field omitted for now until Step 16
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreatedEntry {
+    pub id: u64,
+    #[serde(flatten)]
+    pub fields: HashMap<String, serde_json::Value>,
+}
+
 impl Category {
     pub fn get_name(&self) -> Option<String> {
         // Try common field names for category name
@@ -116,6 +146,60 @@ impl BaserowClient {
 
         println!("Found {} categories", response.results.len());
         Ok(response.results)
+    }
+
+
+    pub async fn create_media_entry(&self, entry_data: MediaEntry) -> Result<CreatedEntry, BaserowError> {
+        println!("Creating new media entry in Baserow...");
+        
+        let url = format!("{}/api/database/rows/table/{}/?user_field_names=true", 
+            self.config.base_url.trim_end_matches('/'), 
+            self.config.media_table_id
+        );
+
+        println!("Making request to: {}", url);
+
+        let response = self.client
+            .post(&url)
+            .header("Authorization", format!("Token {}", self.config.api_token))
+            .header("Content-Type", "application/json")
+            .json(&entry_data)
+            .send()
+            .await?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(BaserowError::InvalidResponse(format!(
+                "Failed to create entry: HTTP {} - {}", 
+                status,
+                error_text
+            )));
+        }
+
+        let created_entry: CreatedEntry = response.json().await
+            .map_err(|e| BaserowError::InvalidResponse(e.to_string()))?;
+
+        println!("Successfully created entry with ID: {}", created_entry.id);
+        Ok(created_entry)
+    }
+
+    pub fn find_category_ids_by_names(&self, category_names: &[String], available_categories: &[Category]) -> Vec<u64> {
+        let mut category_ids = Vec::new();
+        
+        for name in category_names {
+            if let Some(category) = available_categories.iter().find(|cat| {
+                cat.get_name()
+                    .map(|cat_name| cat_name.to_lowercase() == name.to_lowercase())
+                    .unwrap_or(false)
+            }) {
+                category_ids.push(category.id);
+            } else {
+                println!("Warning: Category '{}' not found in available categories", name);
+            }
+        }
+        
+        category_ids
     }
 
     pub async fn test_connection(&self) -> Result<(), BaserowError> {

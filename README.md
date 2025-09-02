@@ -4,13 +4,13 @@ A CLI tool to automate adding books to your personal Baserow library using publi
 
 ## Features
 
-- Add books via ISBN or title/author
+- Add books via ISBN or title/author with ebook/physical classification
 - Fetch data from Google Books (primary) + Open Library (fallback)
 - Interactive selection for ambiguous searches
-- Auto-download and upload book covers
+- Web search enhancement for comprehensive book information
 - LLM-powered category selection (from existing Baserow categories)
 - Generate synopses when API data is insufficient
-- Pre-flight confirmation before database writes
+- Complete Baserow database integration
 
 ## Technical Stack
 
@@ -20,6 +20,7 @@ A CLI tool to automate adding books to your personal Baserow library using publi
 - **Data Handling**: `serde`, `tokio`
 - **Image Processing**: `image`
 - **LLM Integration**: Modular (OpenAI/Claude/Ollama)
+- **Web Search**: DuckDuckGo API integration
 
 ## Configuration
 
@@ -133,8 +134,8 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 11. **LLM Synopsis Generation**  
     Implement LLM synopsis (150 words, spoiler-free) (FR-06).
 
-[] 12. **Baserow Entry Creation**  
-    Map all data to Baserow fields via API (FR-07).
+[✓] 12. **Baserow Entry Creation**  
+    Map all data to Baserow fields via API with ebook/physical classification (FR-07).
 
 [] 13. **Pre-flight Confirmation**  
     Add summary + `[y/N]` prompt before database write (FR-08).
@@ -150,9 +151,24 @@ Environment variables override YAML configuration values. This allows you to:
 
 ## Next Steps
 
-1. Implement Baserow entry creation for complete database integration
-2. Add pre-flight confirmation before database writes  
-3. Enhance user feedback with step-by-step logging
-4. Add cover image downloading and processing as final enhancement
+1. Add pre-flight confirmation before database writes  
+2. Enhance user feedback with step-by-step logging
+3. Add cover image downloading and processing as final enhancement
+
+## Usage
+
+```bash
+# Add a physical book by ISBN
+wcm add --isbn "9780345391803"
+
+# Add an ebook by ISBN  
+wcm add --isbn "9780345391803" --ebook
+
+# Add a book by title and author
+wcm add --title "The Lord of the Rings" --author "J.R.R. Tolkien"
+
+# Test Baserow connection
+wcm test --baserow
+```
 
 *Note: All LLM calls will strictly use existing Baserow categories (no new categories created).*

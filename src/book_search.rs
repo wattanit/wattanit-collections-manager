@@ -171,7 +171,7 @@ impl CombinedBookSearcher {
         }
     }
 
-    pub async fn search_by_isbn(&self, isbn: &str) -> Result<Option<BookResult>, Box<dyn std::error::Error>> {
+    pub async fn search_by_isbn(&self, isbn: &str, is_ebook: bool) -> Result<Option<BookResult>, Box<dyn std::error::Error>> {
         if self.config.app.verbose {
             println!("Fetching book data from Google Books API...");
         }
@@ -179,7 +179,7 @@ impl CombinedBookSearcher {
         // Try Google Books first
         match BookSearcher::search_by_isbn(&self.google_client, isbn).await {
             Ok(results) if !results.books.is_empty() => {
-                return self.handle_search_results(results, isbn).await;
+                return self.handle_search_results(results, isbn, is_ebook).await;
             }
             Ok(_) => {
                 if self.config.app.verbose {
@@ -205,10 +205,10 @@ impl CombinedBookSearcher {
             return Ok(None);
         }
         
-        self.handle_search_results(results, isbn).await
+        self.handle_search_results(results, isbn, is_ebook).await
     }
 
-    pub async fn search_by_title_author(&self, title: &str, author: &str) -> Result<Option<BookResult>, Box<dyn std::error::Error>> {
+    pub async fn search_by_title_author(&self, title: &str, author: &str, is_ebook: bool) -> Result<Option<BookResult>, Box<dyn std::error::Error>> {
         if self.config.app.verbose {
             println!("Searching for books on Google Books API...");
         }
@@ -216,7 +216,7 @@ impl CombinedBookSearcher {
         // Try Google Books first
         match BookSearcher::search_by_title_author(&self.google_client, title, author).await {
             Ok(results) if !results.books.is_empty() => {
-                return self.handle_search_results(results, &format!("title: '{}', author: '{}'", title, author)).await;
+                return self.handle_search_results(results, &format!("title: '{}', author: '{}'", title, author), is_ebook).await;
             }
             Ok(_) => {
                 if self.config.app.verbose {
@@ -242,10 +242,10 @@ impl CombinedBookSearcher {
             return Ok(None);
         }
         
-        self.handle_search_results(results, &format!("title: '{}', author: '{}'", title, author)).await
+        self.handle_search_results(results, &format!("title: '{}', author: '{}'", title, author), is_ebook).await
     }
 
-    async fn handle_search_results(&self, results: SearchResults, search_query: &str) -> Result<Option<BookResult>, Box<dyn std::error::Error>> {
+    async fn handle_search_results(&self, results: SearchResults, search_query: &str, is_ebook: bool) -> Result<Option<BookResult>, Box<dyn std::error::Error>> {
         let selected_book = if results.books.len() > 1 {
             // Limit to max_search_results for display
             let display_books = if results.books.len() > self.config.app.max_search_results {
@@ -299,23 +299,46 @@ impl CombinedBookSearcher {
                                 println!("Selected categories: {}", selected_categories.join(", "));
                                 
                                 // Check if synopsis needs to be generated
-                                match self.generate_synopsis_if_needed(&book).await {
+                                let final_synopsis = match self.generate_synopsis_if_needed(&book).await {
                                     Ok(Some(synopsis)) => {
                                         println!("\n=== Generated Synopsis ===");
                                         println!("{}", synopsis);
                                         println!("========================\n");
+                                        synopsis
                                     }
                                     Ok(None) => {
                                         if self.config.app.verbose {
                                             println!("Existing synopsis is sufficient, no LLM generation needed.");
                                         }
+                                        // Use existing description as synopsis
+                                        match &book {
+                                            BookResult::Google(google_book) => {
+                                                google_book.volume_info.description.as_deref().unwrap_or("No description available").to_string()
+                                            }
+                                            BookResult::OpenLibrary(_) => "No description available".to_string(),
+                                        }
                                     }
                                     Err(e) => {
                                         eprintln!("Failed to generate synopsis: {}", e);
+                                        // Use existing description as fallback
+                                        match &book {
+                                            BookResult::Google(google_book) => {
+                                                google_book.volume_info.description.as_deref().unwrap_or("No description available").to_string()
+                                            }
+                                            BookResult::OpenLibrary(_) => "No description available".to_string(),
+                                        }
+                                    }
+                                };
+                                
+                                // Create Baserow entry with all the collected data
+                                match self.create_baserow_entry(&book, &selected_categories, &final_synopsis, &categories, is_ebook).await {
+                                    Ok(entry_id) => {
+                                        println!("✅ Successfully added book to library! Entry ID: {}", entry_id);
+                                    }
+                                    Err(e) => {
+                                        eprintln!("❌ Failed to create Baserow entry: {}", e);
                                     }
                                 }
-                                
-                                // TODO: Store selected categories and synopsis for Baserow entry creation
                             }
                             Err(e) => {
                                 eprintln!("Failed to select categories with LLM: {}", e);
@@ -424,5 +447,51 @@ impl CombinedBookSearcher {
         } else {
             Ok(None)
         }
+    }
+
+    async fn create_baserow_entry(
+        &self,
+        book: &BookResult,
+        selected_categories: &[String],
+        synopsis: &str,
+        available_categories: &[crate::baserow::Category],
+        is_ebook: bool,
+    ) -> Result<u64, Box<dyn std::error::Error>> {
+        if self.config.app.verbose {
+            println!("Preparing Baserow entry with collected data...");
+        }
+
+        // Extract book information
+        let title = book.get_full_title();
+        let author = book.get_all_authors();
+        let isbn = match book {
+            BookResult::Google(google_book) => google_book.get_isbn_13().or_else(|| google_book.get_isbn_10()),
+            BookResult::OpenLibrary(ol_book) => ol_book.get_best_isbn(),
+        };
+
+        // Convert category names to IDs
+        let category_ids = self.baserow_client.find_category_ids_by_names(selected_categories, available_categories);
+        
+        if category_ids.is_empty() {
+            return Err("No valid category IDs found for selected categories".into());
+        }
+
+        // Create the media entry
+        let entry = crate::baserow::MediaEntry {
+            title,
+            author,
+            isbn,
+            synopsis: synopsis.to_string(),
+            category: category_ids,
+            read: false, // Default to not read
+            rating: 0, // Default rating (0 = unrated)
+            media_type: Some(if is_ebook { 3021 } else { 3020 }), // 3021 = Ebook, 3020 = Physical
+            location: vec![], // Empty - to be filled manually by user
+        };
+
+        // Create the entry in Baserow
+        let created_entry = self.baserow_client.create_media_entry(entry).await?;
+        
+        Ok(created_entry.id)
     }
 }

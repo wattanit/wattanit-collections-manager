@@ -34,6 +34,9 @@ enum Commands {
         
         #[arg(long, help = "Book author")]
         author: Option<String>,
+        
+        #[arg(long, help = "Mark as ebook (default: physical book)")]
+        ebook: bool,
     },
     Test {
         #[arg(long, help = "Test Baserow connection")]
@@ -81,20 +84,20 @@ async fn main() {
     let searcher = CombinedBookSearcher::new(google_client, open_library_client, baserow_client.clone(), config.clone());
 
     match &cli.command {
-        Commands::Add { isbn, title, author } => {
+        Commands::Add { isbn, title, author, ebook } => {
             if let Some(isbn_value) = isbn {
                 if config.app.verbose {
-                    println!("Adding book by ISBN: {}", isbn_value);
+                    println!("Adding {} by ISBN: {}", if *ebook { "ebook" } else { "book" }, isbn_value);
                 }
-                if let Err(e) = add_book_by_isbn(isbn_value, &searcher).await {
+                if let Err(e) = add_book_by_isbn(isbn_value, &searcher, *ebook).await {
                     eprintln!("Error adding book by ISBN: {}", e);
                     std::process::exit(1);
                 }
             } else if let (Some(title_value), Some(author_value)) = (title, author) {
                 if config.app.verbose {
-                    println!("Adding book by title: '{}' and author: '{}'", title_value, author_value);
+                    println!("Adding {} by title: '{}' and author: '{}'", if *ebook { "ebook" } else { "book" }, title_value, author_value);
                 }
-                if let Err(e) = add_book_by_title_author(title_value, author_value, &searcher).await {
+                if let Err(e) = add_book_by_title_author(title_value, author_value, &searcher, *ebook).await {
                     eprintln!("Error adding book by title/author: {}", e);
                     std::process::exit(1);
                 }
@@ -118,8 +121,9 @@ async fn main() {
 async fn add_book_by_isbn(
     isbn: &str,
     searcher: &CombinedBookSearcher,
+    is_ebook: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    searcher.search_by_isbn(isbn).await?;
+    searcher.search_by_isbn(isbn, is_ebook).await?;
     Ok(())
 }
 
@@ -127,8 +131,9 @@ async fn add_book_by_title_author(
     title: &str, 
     author: &str,
     searcher: &CombinedBookSearcher,
+    is_ebook: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    searcher.search_by_title_author(title, author).await?;
+    searcher.search_by_title_author(title, author, is_ebook).await?;
     Ok(())
 }
 
