@@ -152,6 +152,7 @@ impl BookSearcher for crate::open_library::OpenLibraryClient {
 pub struct CombinedBookSearcher {
     google_client: crate::google_books::GoogleBooksClient,
     open_library_client: crate::open_library::OpenLibraryClient,
+    baserow_client: crate::baserow::BaserowClient,
     config: Config,
 }
 
@@ -159,11 +160,13 @@ impl CombinedBookSearcher {
     pub fn new(
         google_client: crate::google_books::GoogleBooksClient,
         open_library_client: crate::open_library::OpenLibraryClient,
+        baserow_client: crate::baserow::BaserowClient,
         config: Config,
     ) -> Self {
         Self {
             google_client,
             open_library_client,
+            baserow_client,
             config,
         }
     }
@@ -243,7 +246,7 @@ impl CombinedBookSearcher {
     }
 
     async fn handle_search_results(&self, results: SearchResults, search_query: &str) -> Result<Option<BookResult>, Box<dyn std::error::Error>> {
-        if results.books.len() > 1 {
+        let selected_book = if results.books.len() > 1 {
             // Limit to max_search_results for display
             let display_books = if results.books.len() > self.config.app.max_search_results {
                 &results.books[..self.config.app.max_search_results]
@@ -260,11 +263,7 @@ impl CombinedBookSearcher {
                 results.books.len(), results.source, search_query, display_books.len());
             
             match interactive_select_book(&truncated_results) {
-                Ok(Some(selected_book)) => {
-                    let handle = selected_book.display_info(&self.config);
-                    handle.await?;
-                    return Ok(Some(selected_book.clone()));
-                }
+                Ok(Some(selected_book)) => Some(selected_book.clone()),
                 Ok(None) => {
                     println!("No book selected.");
                     return Ok(None);
@@ -274,14 +273,38 @@ impl CombinedBookSearcher {
                         println!("Error in interactive selection: {}", e);
                     }
                     // Fall through to show first result
+                    results.books.first().cloned()
                 }
             }
-        }
+        } else {
+            results.books.first().cloned()
+        };
         
-        if let Some(book) = results.books.first() {
+        if let Some(book) = selected_book {
+            // Display book information
             let handle = book.display_info(&self.config);
             handle.await?;
-            return Ok(Some(book.clone()));
+            
+            // Fetch categories from Baserow
+            match self.baserow_client.fetch_categories().await {
+                Ok(categories) => {
+                    if !categories.is_empty() {
+                        crate::baserow::display_categories(&categories);
+                        // TODO: This is where we'll add LLM category selection in the next step
+                        println!("Categories fetched successfully! Next: implement LLM category selection.");
+                    } else {
+                        println!("No categories found in Baserow table.");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch categories from Baserow: {}", e);
+                    if self.config.app.verbose {
+                        eprintln!("Make sure your Baserow API token and categories table ID are correct.");
+                    }
+                }
+            }
+            
+            return Ok(Some(book));
         }
         
         Ok(None)

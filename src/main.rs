@@ -4,11 +4,13 @@ mod config;
 mod google_books;
 mod open_library;
 mod book_search;
+mod baserow;
 
 use config::Config;
 use google_books::GoogleBooksClient;
 use open_library::OpenLibraryClient;
 use book_search::CombinedBookSearcher;
+use baserow::BaserowClient;
 
 #[derive(Parser)]
 #[command(name = "wcm")]
@@ -30,6 +32,10 @@ enum Commands {
         
         #[arg(long, help = "Book author")]
         author: Option<String>,
+    },
+    Test {
+        #[arg(long, help = "Test Baserow connection")]
+        baserow: bool,
     },
 }
 
@@ -67,9 +73,10 @@ async fn main() {
     let open_library_client = OpenLibraryClient::new(
         config.open_library.base_url.clone(),
     );
+    let baserow_client = BaserowClient::new(config.baserow.clone());
 
     // Create combined searcher
-    let searcher = CombinedBookSearcher::new(google_client, open_library_client, config.clone());
+    let searcher = CombinedBookSearcher::new(google_client, open_library_client, baserow_client.clone(), config.clone());
 
     match &cli.command {
         Commands::Add { isbn, title, author } => {
@@ -92,6 +99,15 @@ async fn main() {
             } else {
                 eprintln!("Error: Please provide either --isbn OR both --title and --author");
                 std::process::exit(1);
+            }
+        }
+        Commands::Test { baserow } => {
+            if *baserow {
+                println!("Testing Baserow connection...");
+                if let Err(e) = baserow_client.test_connection().await {
+                    eprintln!("Baserow connection test failed: {}", e);
+                    std::process::exit(1);
+                }
             }
         }
     }

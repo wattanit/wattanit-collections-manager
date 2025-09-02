@@ -118,7 +118,7 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 6. **Ambiguous Search Handling**  
    Add interactive selection for ambiguous search results (FR-03).
 
-[] 7. **Category Pre-fetch**  
+[✓] 7. **Category Pre-fetch**  
    Fetch existing categories from Baserow `Categories` table (FR-05).
 
 [] 8. **LLM Category Prompt**  

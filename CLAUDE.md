@@ -66,7 +66,7 @@ The project follows a modular architecture with these key components:
 
 ## Current Status
 
-Advanced book search functionality implemented:
+Complete book search and Baserow integration implemented:
 - Project setup with all required dependencies including dialoguer for interactive selection
 - Complete configuration system with YAML and environment variable support
 - CLI structure with clap for `wcm add` command supporting ISBN and title/author inputs
@@ -75,6 +75,8 @@ Advanced book search functionality implemented:
 - Interactive selection menus for ambiguous search results with proper truncation logic
 - Rich book information display from both APIs with source identification
 - Smart max_search_results limiting to prevent overwhelming users
+- Baserow client with category pre-fetching functionality
+- Successfully connects to self-hosted Baserow instance and fetches existing categories
 
-The application now provides a complete dual-API book search experience with intelligent fallback and user-friendly selection interfaces. Next steps focus on Baserow integration and LLM functionality, with cover image handling moved to final implementation according to the reordered 16-step plan in README.md.
+The application now provides a complete dual-API book search experience with working Baserow integration. Category fetching is operational, retrieving all 69 categories from the Categories table. Next steps focus on LLM functionality for automated category selection and synopsis generation according to the 16-step plan in README.md.
 - Do not use emoji, especially when writing documentation
