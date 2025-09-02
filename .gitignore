@@ -1,1 +1,19 @@
 .aider*
+
+# Rust
+/target/
+Cargo.lock
+
+# Environment files
+.env
+.env.local
+
+# Configuration with secrets
+config.yaml
+config.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
