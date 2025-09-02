@@ -112,11 +112,11 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 4. **Google Books API**  
    Integrate primary book data fetching (FR-02).
 
-[] 5. **Open Library API**  
+[✓] 5. **Open Library API**  
    Implement fallback for book data (FR-02).
 
-[] 6. **Ambiguous Search Handling**  
-   Add interactive selection for >5 search results (FR-03).
+[✓] 6. **Ambiguous Search Handling**  
+   Add interactive selection for ambiguous search results (FR-03).
 
 [] 7. **Cover Image Handling**  
    Download highest-res cover + upload to Baserow (FR-04).
@@ -150,8 +150,8 @@ Environment variables override YAML configuration values. This allows you to:
 
 ## Next Steps
 
-1. Implement Open Library fallback API
-2. Add interactive search result selection
-3. Implement cover image downloading and processing
+1. Implement cover image downloading and processing
+2. Implement Baserow category pre-fetching
+3. Add LLM integration for category selection
 
 *Note: All LLM calls will strictly use existing Baserow categories (no new categories created).*

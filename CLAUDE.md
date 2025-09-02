@@ -43,6 +43,7 @@ The project follows a modular architecture with these key components:
 - `serde` - JSON/YAML serialization
 - `tokio` - Async runtime
 - `image` - Cover image processing
+- `dialoguer` - Interactive terminal selection menus
 
 ### Data Flow
 1. Parse CLI input (ISBN or title/author)
@@ -61,16 +62,19 @@ The project follows a modular architecture with these key components:
 - **Category Constraint**: LLMs must only select from existing Baserow categories, never create new ones
 - **Fallback Logic**: Google Books API is primary, Open Library is fallback
 - **User Experience**: Provides step-by-step feedback and requires confirmation before database writes
-- **Error Handling**: Handles ambiguous search results with interactive selection (top 5 results)
+- **Interactive Selection**: Handles ambiguous search results with arrow-key selection menus (limited by max_search_results)
 
 ## Current Status
 
-Core functionality implemented:
-- Project setup with all required dependencies (Cargo.toml)
+Advanced book search functionality implemented:
+- Project setup with all required dependencies including dialoguer for interactive selection
 - Complete configuration system with YAML and environment variable support
 - CLI structure with clap for `wcm add` command supporting ISBN and title/author inputs
 - Google Books API integration with comprehensive book data fetching (works without API key)
-- Rich book information display with titles, authors, ISBNs, descriptions, and cover images
+- Open Library API integration with intelligent fallback system
+- Interactive selection menus for ambiguous search results with proper truncation logic
+- Rich book information display from both APIs with source identification
+- Smart max_search_results limiting to prevent overwhelming users
 
-The application can now successfully fetch and display book information from Google Books API. Next steps focus on Open Library fallback API and interactive selection features according to the 16-step implementation plan in README.md.
+The application now provides a complete dual-API book search experience with intelligent fallback and user-friendly selection interfaces. Next steps focus on cover image handling and Baserow integration according to the 16-step implementation plan in README.md.
 - Do not use emoji, especially when writing documentation

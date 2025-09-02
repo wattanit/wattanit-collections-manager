@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use dialoguer::{Select, theme::ColorfulTheme};
 
 mod config;
 mod google_books;
@@ -106,6 +107,34 @@ async fn add_book_by_isbn(
     match google_client.search_by_isbn(isbn).await {
         Ok(response) if response.total_items > 0 => {
             if let Some(items) = &response.items {
+                if items.len() > 1 {
+                    // Limit to max_search_results for display
+                    let display_items = if items.len() > config.app.max_search_results {
+                        &items[..config.app.max_search_results]
+                    } else {
+                        items
+                    };
+                    
+                    println!("Found {} books from Google Books for ISBN {} (showing top {}):", 
+                        items.len(), isbn, display_items.len());
+                    match interactive_select_google_book(display_items) {
+                        Ok(Some(selected_book)) => {
+                            display_google_book_info(selected_book, config);
+                            return Ok(());
+                        }
+                        Ok(None) => {
+                            println!("No book selected.");
+                            return Ok(());
+                        }
+                        Err(e) => {
+                            if config.app.verbose {
+                                println!("Error in interactive selection: {}", e);
+                            }
+                            // Fall through to show first result
+                        }
+                    }
+                }
+                
                 if let Some(book) = items.first() {
                     display_google_book_info(book, config);
                     return Ok(());
@@ -136,6 +165,34 @@ async fn add_book_by_isbn(
         return Ok(());
     }
     
+    if response.docs.len() > 1 {
+        // Limit to max_search_results for display
+        let display_docs = if response.docs.len() > config.app.max_search_results {
+            &response.docs[..config.app.max_search_results]
+        } else {
+            &response.docs
+        };
+        
+        println!("Found {} books from Open Library for ISBN {} (showing top {}):", 
+            response.docs.len(), isbn, display_docs.len());
+        match interactive_select_open_library_book(display_docs) {
+            Ok(Some(selected_book)) => {
+                display_open_library_book_info(selected_book, config).await;
+                return Ok(());
+            }
+            Ok(None) => {
+                println!("No book selected.");
+                return Ok(());
+            }
+            Err(e) => {
+                if config.app.verbose {
+                    println!("Error in interactive selection: {}", e);
+                }
+                // Fall through to show first result
+            }
+        }
+    }
+    
     if let Some(book) = response.docs.first() {
         display_open_library_book_info(book, config).await;
     }
@@ -158,16 +215,32 @@ async fn add_book_by_title_author(
     match google_client.search_by_title_author(title, author).await {
         Ok(response) if response.total_items > 0 => {
             if let Some(items) = &response.items {
-                if items.len() > 1 && items.len() <= config.app.max_search_results {
-                    println!("Found {} books from Google Books. Please select one:", items.len());
-                    for (i, book) in items.iter().enumerate() {
-                        println!("{}. {} by {}", 
-                            i + 1, 
-                            book.get_full_title(), 
-                            book.get_all_authors()
-                        );
+                if items.len() > 1 {
+                    // Limit to max_search_results for display
+                    let display_items = if items.len() > config.app.max_search_results {
+                        &items[..config.app.max_search_results]
+                    } else {
+                        items
+                    };
+                    
+                    println!("Found {} books from Google Books (showing top {}):", 
+                        items.len(), display_items.len());
+                    match interactive_select_google_book(display_items) {
+                        Ok(Some(selected_book)) => {
+                            display_google_book_info(selected_book, config);
+                            return Ok(());
+                        }
+                        Ok(None) => {
+                            println!("No book selected.");
+                            return Ok(());
+                        }
+                        Err(e) => {
+                            if config.app.verbose {
+                                println!("Error in interactive selection: {}", e);
+                            }
+                            // Fall through to show first result
+                        }
                     }
-                    println!("Interactive selection not yet implemented - showing first result:");
                 }
                 
                 if let Some(book) = items.first() {
@@ -200,16 +273,32 @@ async fn add_book_by_title_author(
         return Ok(());
     }
     
-    if response.docs.len() > 1 && response.docs.len() <= config.app.max_search_results {
-        println!("Found {} books from Open Library. Please select one:", response.docs.len());
-        for (i, book) in response.docs.iter().enumerate() {
-            println!("{}. {} by {}", 
-                i + 1, 
-                book.get_full_title(), 
-                book.get_all_authors()
-            );
+    if response.docs.len() > 1 {
+        // Limit to max_search_results for display
+        let display_docs = if response.docs.len() > config.app.max_search_results {
+            &response.docs[..config.app.max_search_results]
+        } else {
+            &response.docs
+        };
+        
+        println!("Found {} books from Open Library (showing top {}):", 
+            response.docs.len(), display_docs.len());
+        match interactive_select_open_library_book(display_docs) {
+            Ok(Some(selected_book)) => {
+                display_open_library_book_info(selected_book, config).await;
+                return Ok(());
+            }
+            Ok(None) => {
+                println!("No book selected.");
+                return Ok(());
+            }
+            Err(e) => {
+                if config.app.verbose {
+                    println!("Error in interactive selection: {}", e);
+                }
+                // Fall through to show first result
+            }
         }
-        println!("Interactive selection not yet implemented - showing first result:");
     }
     
     if let Some(book) = response.docs.first() {
@@ -308,4 +397,61 @@ async fn display_open_library_book_info(book: &open_library::OpenLibraryBook, _c
     }
     
     println!("========================================\n");
+}
+
+fn interactive_select_google_book(books: &[google_books::BookItem]) -> Result<Option<&google_books::BookItem>, Box<dyn std::error::Error>> {
+    let items: Vec<String> = books.iter().map(|book| {
+        format!("{} by {} ({})", 
+            book.get_full_title(), 
+            book.get_all_authors(),
+            book.volume_info.published_date.as_deref().unwrap_or("Unknown year")
+        )
+    }).collect();
+    
+    let mut items_with_cancel = items;
+    items_with_cancel.push("Cancel - don't add any book".to_string());
+    
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a book to add")
+        .items(&items_with_cancel)
+        .default(0)
+        .interact()?;
+    
+    if selection == items_with_cancel.len() - 1 {
+        // User selected cancel
+        Ok(None)
+    } else {
+        Ok(books.get(selection))
+    }
+}
+
+fn interactive_select_open_library_book(books: &[open_library::OpenLibraryBook]) -> Result<Option<&open_library::OpenLibraryBook>, Box<dyn std::error::Error>> {
+    let items: Vec<String> = books.iter().map(|book| {
+        let year = book.get_latest_publish_year()
+            .map(|y| y.to_string())
+            .or_else(|| book.get_latest_publish_date())
+            .unwrap_or_else(|| "Unknown year".to_string());
+        
+        format!("{} by {} ({})", 
+            book.get_full_title(), 
+            book.get_all_authors(),
+            year
+        )
+    }).collect();
+    
+    let mut items_with_cancel = items;
+    items_with_cancel.push("Cancel - don't add any book".to_string());
+    
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a book to add")
+        .items(&items_with_cancel)
+        .default(0)
+        .interact()?;
+    
+    if selection == items_with_cancel.len() - 1 {
+        // User selected cancel
+        Ok(None)
+    } else {
+        Ok(books.get(selection))
+    }
 }
