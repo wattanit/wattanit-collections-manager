@@ -18,7 +18,7 @@ cargo clippy          # Lint with clippy
 cargo fmt             # Format code
 ```
 
-### CLI Usage (once implemented)
+### CLI Usage
 ```bash
 wcm add --isbn 9780345391803                                    # Add book by ISBN
 wcm add --title "The Lord of the Rings" --author "J.R.R. Tolkien"  # Add book by title/author
@@ -65,4 +65,10 @@ The project follows a modular architecture with these key components:
 
 ## Current Status
 
-This is an early-stage project. The basic Rust project structure exists with dependencies defined in Cargo.toml, but core implementation is pending according to the 16-step implementation plan in README.md.
+Basic project foundation is complete:
+- Project setup with all required dependencies (Cargo.toml)
+- CLI structure implemented with clap for `wcm add` command supporting ISBN and title/author inputs
+- Basic argument validation and error handling in place
+
+Next steps focus on configuration system and API integrations according to the 16-step implementation plan in README.md.
+- Do not use emoji, especially when writing documentation

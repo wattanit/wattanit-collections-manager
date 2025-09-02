@@ -23,13 +23,13 @@ A CLI tool to automate adding books to your personal Baserow library using publi
 
 ## Implementation Plan
 
-[] 1. **Project Setup**  
+[✓] 1. **Project Setup**  
    Initialize Rust project with required dependencies (clap, reqwest, serde, tokio, image).
 
 [] 2. **Configuration System**  
    Implement `.env`/`config.yaml` for API keys and endpoints (NFR-01).
 
-[] 3. **CLI Structure**  
+[✓] 3. **CLI Structure**  
    Design `wcm add` command supporting `--isbn`, `--title`, and `--author`.
 
 [] 4. **Google Books API**  
@@ -74,7 +74,7 @@ A CLI tool to automate adding books to your personal Baserow library using publi
 ## Next Steps
 
 1. Add `config.yaml` to repository
-2. Implement core CLI structure
-3. Integrate primary API (Google Books)
+2. Integrate primary API (Google Books)
+3. Implement Open Library fallback API
 
 *Note: All LLM calls will strictly use existing Baserow categories (no new categories created).*
