@@ -66,17 +66,22 @@ The project follows a modular architecture with these key components:
 
 ## Current Status
 
-Complete book search and Baserow integration implemented:
+Complete book search, LLM integration, and Baserow functionality implemented:
 - Project setup with all required dependencies including dialoguer for interactive selection
 - Complete configuration system with YAML and environment variable support
 - CLI structure with clap for `wcm add` command supporting ISBN and title/author inputs
 - Google Books API integration with comprehensive book data fetching (works without API key)
 - Open Library API integration with intelligent fallback system
 - Interactive selection menus for ambiguous search results with proper truncation logic
-- Rich book information display from both APIs with source identification
+- Rich book information display from both APIs with enhanced description viewing (1000 chars)
 - Smart max_search_results limiting to prevent overwhelming users
 - Baserow client with category pre-fetching functionality
 - Successfully connects to self-hosted Baserow instance and fetches existing categories
+- Web search integration using DuckDuckGo API for enhanced book information gathering
+- Complete LLM integration with modular architecture supporting OpenAI/Claude/Ollama
+- Intelligent category selection using LLM with existing Baserow categories (69 categories)
+- Automatic synopsis generation when existing descriptions are insufficient
+- Smart synopsis length checking (50+ words minimum) with 150-word LLM-generated replacements
 
-The application now provides a complete dual-API book search experience with working Baserow integration. Category fetching is operational, retrieving all 69 categories from the Categories table. Next steps focus on LLM functionality for automated category selection and synopsis generation according to the 16-step plan in README.md.
+The application now provides a complete end-to-end book processing pipeline from search to LLM-enhanced categorization and synopsis generation. All LLM functionality is working with local Ollama integration. Next steps focus on Baserow entry creation and pre-flight confirmation according to the 16-step plan in README.md.
 - Do not use emoji, especially when writing documentation

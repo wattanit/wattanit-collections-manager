@@ -271,8 +271,8 @@ pub fn display_google_book_info(book: &BookItem, _config: &Config) {
     }
     
     if let Some(description) = &book.volume_info.description {
-        let desc = if description.len() > 200 {
-            format!("{}...", &description[..200])
+        let desc = if description.len() > 1000 {
+            format!("{}...", &description[..1000])
         } else {
             description.clone()
         };

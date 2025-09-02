@@ -289,9 +289,40 @@ impl CombinedBookSearcher {
             match self.baserow_client.fetch_categories().await {
                 Ok(categories) => {
                     if !categories.is_empty() {
-                        crate::baserow::display_categories(&categories);
-                        // TODO: This is where we'll add LLM category selection in the next step
-                        println!("Categories fetched successfully! Next: implement LLM category selection.");
+                        if self.config.app.verbose {
+                            crate::baserow::display_categories(&categories);
+                        }
+                        
+                        // Perform LLM-powered category selection
+                        match self.select_categories_with_llm(&book, &categories).await {
+                            Ok(selected_categories) => {
+                                println!("Selected categories: {}", selected_categories.join(", "));
+                                
+                                // Check if synopsis needs to be generated
+                                match self.generate_synopsis_if_needed(&book).await {
+                                    Ok(Some(synopsis)) => {
+                                        println!("\n=== Generated Synopsis ===");
+                                        println!("{}", synopsis);
+                                        println!("========================\n");
+                                    }
+                                    Ok(None) => {
+                                        if self.config.app.verbose {
+                                            println!("Existing synopsis is sufficient, no LLM generation needed.");
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Failed to generate synopsis: {}", e);
+                                    }
+                                }
+                                
+                                // TODO: Store selected categories and synopsis for Baserow entry creation
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to select categories with LLM: {}", e);
+                                println!("Available categories:");
+                                crate::baserow::display_categories(&categories);
+                            }
+                        }
                     } else {
                         println!("No categories found in Baserow table.");
                     }
@@ -308,5 +339,90 @@ impl CombinedBookSearcher {
         }
         
         Ok(None)
+    }
+
+    async fn select_categories_with_llm(
+        &self,
+        book: &BookResult,
+        categories: &[crate::baserow::Category],
+    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        if self.config.app.verbose {
+            println!("Enhancing book information with web search...");
+        }
+
+        // Get basic book information
+        let title = book.get_full_title();
+        let author = book.get_all_authors();
+        let existing_description = match book {
+            BookResult::Google(google_book) => {
+                google_book.volume_info.description.as_deref().unwrap_or("No description available")
+            }
+            BookResult::OpenLibrary(_) => "No description available",
+        };
+
+        // Enhance with web search
+        let enhanced_info = crate::web_search::enhance_book_info_with_search(
+            &title,
+            &author,
+            existing_description,
+        ).await;
+
+        if self.config.app.verbose {
+            println!("Enhanced book information prepared, consulting LLM for category selection...");
+        }
+
+        // Use LLM to select categories
+        let llm_provider = crate::llm::LlmProvider::from_config(&self.config)?;
+        let selected_categories = llm_provider.select_categories(&enhanced_info, categories).await?;
+
+        Ok(selected_categories)
+    }
+
+    async fn generate_synopsis_if_needed(
+        &self,
+        book: &BookResult,
+    ) -> Result<Option<String>, Box<dyn std::error::Error>> {
+        let existing_description = match book {
+            BookResult::Google(google_book) => {
+                google_book.volume_info.description.as_deref().unwrap_or("")
+            }
+            BookResult::OpenLibrary(_) => "",
+        };
+
+        // Count words in existing description
+        let word_count = existing_description
+            .split_whitespace()
+            .count();
+
+        if self.config.app.verbose {
+            println!("Existing synopsis has {} words (minimum required: {})", 
+                word_count, self.config.app.min_synopsis_words);
+        }
+
+        // Check if synopsis is too short or missing
+        if word_count < self.config.app.min_synopsis_words {
+            println!("Synopsis too short ({} words), generating enhanced synopsis with LLM...", word_count);
+
+            // Get enhanced book information for synopsis generation
+            let title = book.get_full_title();
+            let author = book.get_all_authors();
+            
+            let enhanced_info = crate::web_search::enhance_book_info_with_search(
+                &title,
+                &author,
+                existing_description,
+            ).await;
+
+            // Generate synopsis using LLM
+            let llm_provider = crate::llm::LlmProvider::from_config(&self.config)?;
+            let generated_synopsis = llm_provider.generate_synopsis(
+                &enhanced_info, 
+                self.config.app.target_synopsis_words
+            ).await?;
+
+            Ok(Some(generated_synopsis))
+        } else {
+            Ok(None)
+        }
     }
 }

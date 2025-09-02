@@ -312,8 +312,8 @@ pub async fn display_open_library_book_info(book: &OpenLibraryBook, _config: &Co
     
     if let Some(first_sentence) = &book.first_sentence {
         if let Some(sentence) = first_sentence.first() {
-            let desc = if sentence.len() > 200 {
-                format!("{}...", &sentence[..200])
+            let desc = if sentence.len() > 1000 {
+                format!("{}...", &sentence[..1000])
             } else {
                 sentence.clone()
             };

@@ -5,6 +5,8 @@ mod google_books;
 mod open_library;
 mod book_search;
 mod baserow;
+mod web_search;
+mod llm;
 
 use config::Config;
 use google_books::GoogleBooksClient;

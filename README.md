@@ -121,16 +121,16 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 7. **Category Pre-fetch**  
    Fetch existing categories from Baserow `Categories` table (FR-05).
 
-[] 8. **LLM Category Prompt**  
+[✓] 8. **LLM Category Prompt**  
    Craft prompt enforcing 3-5 existing categories only (FR-05).
 
-[] 9. **LLM Category Selection**  
+[✓] 9. **LLM Category Selection**  
     Implement LLM category selection using prompt (FR-05).
 
-[] 10. **Synopsis Generation**  
+[✓] 10. **Synopsis Generation**  
     Check API synopsis length; trigger LLM if <50 words (FR-06).
 
-[] 11. **LLM Synopsis Generation**  
+[✓] 11. **LLM Synopsis Generation**  
     Implement LLM synopsis (150 words, spoiler-free) (FR-06).
 
 [] 12. **Baserow Entry Creation**  
@@ -142,7 +142,7 @@ Environment variables override YAML configuration values. This allows you to:
 [] 14. **User Feedback**  
     Add step-by-step logging (e.g., "Fetching data...") (NFR-03).
 
-[] 15. **Multi-LLM Architecture**  
+[✓] 15. **Multi-LLM Architecture**  
     Design modular LLM interface for OpenAI/Claude/Ollama (NFR-02).
 
 [] 16. **Cover Image Handling**  
@@ -150,9 +150,9 @@ Environment variables override YAML configuration values. This allows you to:
 
 ## Next Steps
 
-1. Implement Baserow category pre-fetching
-2. Add LLM integration for category selection and synopsis generation
-3. Implement Baserow entry creation and pre-flight confirmation
+1. Implement Baserow entry creation for complete database integration
+2. Add pre-flight confirmation before database writes  
+3. Enhance user feedback with step-by-step logging
 4. Add cover image downloading and processing as final enhancement
 
 *Note: All LLM calls will strictly use existing Baserow categories (no new categories created).*
