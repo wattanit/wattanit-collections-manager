@@ -55,9 +55,9 @@ The project follows a modular architecture with these key components:
 4. Fetch existing categories from Baserow
 5. Use LLM for category selection (from existing categories only)
 6. Generate synopsis via LLM if needed
-7. Create Baserow entry with appropriate media type (ebook/physical)
-8. Display pre-flight confirmation (pending)
-9. Download and process cover image (pending)
+7. Display pre-flight confirmation with comprehensive summary
+8. Handle cover image upload after user confirmation
+9. Create Baserow entry with all data including cover images
 
 ## Important Implementation Notes
 
@@ -84,8 +84,10 @@ Complete end-to-end book processing pipeline with full Baserow integration:
 - Complete LLM integration with modular architecture supporting OpenAI/Claude/Ollama
 - Intelligent category selection using LLM with existing Baserow categories constraint
 - Automatic synopsis generation when existing descriptions are insufficient (50+ word threshold)
+- Pre-flight confirmation with comprehensive summary before database writes
 - Full database entry creation with proper field mapping and media type classification
 - Working ebook vs physical book classification via --ebook CLI flag
+- Complete cover image handling with upload-via-url after user confirmation
 
-The application now provides a fully functional book management system from search through database entry creation. All core functionality is implemented and tested. Remaining work includes pre-flight confirmation and cover image handling enhancements.
+The application now provides a complete, production-ready book management system. All 16 implementation steps are finished with full end-to-end functionality from search through database entry creation with cover images.
 - Do not use emoji, especially when writing documentation

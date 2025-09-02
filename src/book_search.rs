@@ -336,8 +336,11 @@ impl CombinedBookSearcher {
                                     return Ok(Some(book));
                                 }
                                 
+                                // Handle cover image upload after confirmation
+                                let cover_images = self.handle_cover_image_upload(&book).await;
+                                
                                 // Create Baserow entry with all the collected data
-                                match self.create_baserow_entry(&book, &selected_categories, &final_synopsis, &categories, is_ebook).await {
+                                match self.create_baserow_entry(&book, &selected_categories, &final_synopsis, &categories, is_ebook, cover_images).await {
                                     Ok(entry_id) => {
                                         println!("✅ Successfully added book to library! Entry ID: {}", entry_id);
                                     }
@@ -462,6 +465,7 @@ impl CombinedBookSearcher {
         synopsis: &str,
         available_categories: &[crate::baserow::Category],
         is_ebook: bool,
+        cover_images: Vec<crate::baserow::CoverImage>,
     ) -> Result<u64, Box<dyn std::error::Error>> {
         if self.config.app.verbose {
             println!("Preparing Baserow entry with collected data...");
@@ -493,6 +497,7 @@ impl CombinedBookSearcher {
             rating: 0, // Default rating (0 = unrated)
             media_type: Some(if is_ebook { 3021 } else { 3020 }), // 3021 = Ebook, 3020 = Physical
             location: vec![], // Empty - to be filled manually by user
+            cover: cover_images,
         };
 
         // Create the entry in Baserow
@@ -549,5 +554,61 @@ impl CombinedBookSearcher {
             .interact()?;
         
         Ok(confirmation)
+    }
+
+    fn get_cover_image_url(&self, book: &BookResult) -> Option<String> {
+        match book {
+            BookResult::Google(google_book) => {
+                // Get the highest quality image available from Google Books
+                google_book.volume_info.image_links.as_ref().and_then(|links| {
+                    // Prefer large, then medium, then small, then thumbnail
+                    links.large.as_ref()
+                        .or(links.medium.as_ref())
+                        .or(links.small.as_ref())
+                        .or(links.thumbnail.as_ref())
+                        .map(|url| {
+                            // Upgrade to HTTPS and remove zoom restriction for better quality
+                            url.replace("http://", "https://")
+                               .replace("&zoom=1", "&zoom=0")
+                               .replace("&edge=curl", "")
+                        })
+                })
+            }
+            BookResult::OpenLibrary(ol_book) => {
+                // Generate Open Library cover URL if we have an ISBN
+                if let Some(isbn) = ol_book.get_best_isbn() {
+                    Some(format!("https://covers.openlibrary.org/b/isbn/{}-L.jpg", isbn))
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    async fn handle_cover_image_upload(&self, book: &BookResult) -> Vec<crate::baserow::CoverImage> {
+        match self.get_cover_image_url(book) {
+            Some(image_url) => {
+                if self.config.app.verbose {
+                    println!("Found cover image URL: {}", image_url);
+                }
+                
+                match self.baserow_client.upload_file_via_url(&image_url).await {
+                    Ok(upload_response) => {
+                        vec![crate::baserow::CoverImage {
+                            name: upload_response.name,
+                        }]
+                    }
+                    Err(e) => {
+                        eprintln!("⚠️  Failed to upload cover image: {}", e);
+                        println!("📝 NOTE: Please manually upload the cover image to your book entry.");
+                        vec![]
+                    }
+                }
+            }
+            None => {
+                println!("📝 NOTE: No cover image found. Please manually upload the cover image to your book entry.");
+                vec![]
+            }
+        }
     }
 }
