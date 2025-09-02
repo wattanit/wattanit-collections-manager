@@ -118,40 +118,41 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 6. **Ambiguous Search Handling**  
    Add interactive selection for ambiguous search results (FR-03).
 
-[] 7. **Cover Image Handling**  
-   Download highest-res cover + upload to Baserow (FR-04).
-
-[] 8. **Category Pre-fetch**  
+[] 7. **Category Pre-fetch**  
    Fetch existing categories from Baserow `Categories` table (FR-05).
 
-[] 9. **LLM Category Prompt**  
+[] 8. **LLM Category Prompt**  
    Craft prompt enforcing 3-5 existing categories only (FR-05).
 
-[] 10. **LLM Category Selection**  
+[] 9. **LLM Category Selection**  
     Implement LLM category selection using prompt (FR-05).
 
-[] 11. **Synopsis Generation**  
+[] 10. **Synopsis Generation**  
     Check API synopsis length; trigger LLM if <50 words (FR-06).
 
-[] 12. **LLM Synopsis Generation**  
+[] 11. **LLM Synopsis Generation**  
     Implement LLM synopsis (150 words, spoiler-free) (FR-06).
 
-[] 13. **Baserow Entry Creation**  
+[] 12. **Baserow Entry Creation**  
     Map all data to Baserow fields via API (FR-07).
 
-[] 14. **Pre-flight Confirmation**  
+[] 13. **Pre-flight Confirmation**  
     Add summary + `[y/N]` prompt before database write (FR-08).
 
-[] 15. **User Feedback**  
+[] 14. **User Feedback**  
     Add step-by-step logging (e.g., "Fetching data...") (NFR-03).
 
-[] 16. **Multi-LLM Architecture**  
+[] 15. **Multi-LLM Architecture**  
     Design modular LLM interface for OpenAI/Claude/Ollama (NFR-02).
+
+[] 16. **Cover Image Handling**  
+    Download highest-res cover + upload to Baserow (FR-04).
 
 ## Next Steps
 
-1. Implement cover image downloading and processing
-2. Implement Baserow category pre-fetching
-3. Add LLM integration for category selection
+1. Implement Baserow category pre-fetching
+2. Add LLM integration for category selection and synopsis generation
+3. Implement Baserow entry creation and pre-flight confirmation
+4. Add cover image downloading and processing as final enhancement
 
 *Note: All LLM calls will strictly use existing Baserow categories (no new categories created).*

@@ -49,12 +49,12 @@ The project follows a modular architecture with these key components:
 1. Parse CLI input (ISBN or title/author)
 2. Fetch book data from APIs
 3. Handle ambiguous searches with interactive selection
-4. Download and process cover image
-5. Fetch existing categories from Baserow
-6. Use LLM for category selection (from existing categories only)
-7. Generate synopsis via LLM if needed
-8. Display pre-flight confirmation
-9. Create Baserow entry
+4. Fetch existing categories from Baserow
+5. Use LLM for category selection (from existing categories only)
+6. Generate synopsis via LLM if needed
+7. Display pre-flight confirmation
+8. Create Baserow entry
+9. Download and process cover image (final enhancement)
 
 ## Important Implementation Notes
 
@@ -76,5 +76,5 @@ Advanced book search functionality implemented:
 - Rich book information display from both APIs with source identification
 - Smart max_search_results limiting to prevent overwhelming users
 
-The application now provides a complete dual-API book search experience with intelligent fallback and user-friendly selection interfaces. Next steps focus on cover image handling and Baserow integration according to the 16-step implementation plan in README.md.
+The application now provides a complete dual-API book search experience with intelligent fallback and user-friendly selection interfaces. Next steps focus on Baserow integration and LLM functionality, with cover image handling moved to final implementation according to the reordered 16-step plan in README.md.
 - Do not use emoji, especially when writing documentation
