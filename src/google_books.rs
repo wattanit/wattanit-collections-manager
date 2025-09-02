@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use dialoguer::{Select, theme::ColorfulTheme};
+use crate::config::Config;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GoogleBooksResponse {
@@ -240,5 +242,76 @@ impl BookItem {
             Some(subtitle) => format!("{}: {}", self.volume_info.title, subtitle),
             None => self.volume_info.title.clone(),
         }
+    }
+}
+
+pub fn display_google_book_info(book: &BookItem, _config: &Config) {
+    println!("\n=== Book Information (Google Books) ===");
+    println!("Title: {}", book.get_full_title());
+    println!("Author(s): {}", book.get_all_authors());
+    
+    if let Some(publisher) = &book.volume_info.publisher {
+        println!("Publisher: {}", publisher);
+    }
+    
+    if let Some(date) = &book.volume_info.published_date {
+        println!("Published: {}", date);
+    }
+    
+    if let Some(page_count) = book.volume_info.page_count {
+        println!("Pages: {}", page_count);
+    }
+    
+    if let Some(isbn13) = book.get_isbn_13() {
+        println!("ISBN-13: {}", isbn13);
+    }
+    
+    if let Some(isbn10) = book.get_isbn_10() {
+        println!("ISBN-10: {}", isbn10);
+    }
+    
+    if let Some(description) = &book.volume_info.description {
+        let desc = if description.len() > 200 {
+            format!("{}...", &description[..200])
+        } else {
+            description.clone()
+        };
+        println!("Description: {}", desc);
+    }
+    
+    if let Some(cover_url) = book.get_best_cover_image() {
+        println!("Cover Image: {}", cover_url);
+    }
+    
+    if let Some(categories) = &book.volume_info.categories {
+        println!("Categories: {}", categories.join(", "));
+    }
+    
+    println!("========================================\n");
+}
+
+pub fn interactive_select_google_book(books: &[BookItem]) -> Result<Option<&BookItem>, Box<dyn std::error::Error>> {
+    let items: Vec<String> = books.iter().map(|book| {
+        format!("{} by {} ({})", 
+            book.get_full_title(), 
+            book.get_all_authors(),
+            book.volume_info.published_date.as_deref().unwrap_or("Unknown year")
+        )
+    }).collect();
+    
+    let mut items_with_cancel = items;
+    items_with_cancel.push("Cancel - don't add any book".to_string());
+    
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a book to add")
+        .items(&items_with_cancel)
+        .default(0)
+        .interact()?;
+    
+    if selection == items_with_cancel.len() - 1 {
+        // User selected cancel
+        Ok(None)
+    } else {
+        Ok(books.get(selection))
     }
 }

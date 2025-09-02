@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use dialoguer::{Select, theme::ColorfulTheme};
+use crate::config::Config;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenLibrarySearchResponse {
@@ -273,5 +275,82 @@ impl OpenLibraryBookDetails {
             Some(subtitle) => format!("{}: {}", self.title, subtitle),
             None => self.title.clone(),
         }
+    }
+}
+
+pub async fn display_open_library_book_info(book: &OpenLibraryBook, _config: &Config) {
+    println!("\n=== Book Information (Open Library) ===");
+    println!("Title: {}", book.get_full_title());
+    println!("Author(s): {}", book.get_all_authors());
+    
+    if let Some(publisher) = book.get_primary_publisher() {
+        println!("Publisher: {}", publisher);
+    }
+    
+    if let Some(year) = book.get_latest_publish_year() {
+        println!("Published: {}", year);
+    } else if let Some(date) = book.get_latest_publish_date() {
+        println!("Published: {}", date);
+    }
+    
+    if let Some(pages) = book.number_of_pages_median {
+        println!("Pages: {}", pages);
+    }
+    
+    if let Some(isbn) = book.get_best_isbn() {
+        println!("ISBN: {}", isbn);
+    }
+    
+    if let Some(cover_url) = book.get_cover_url() {
+        println!("Cover Image: {}", cover_url);
+    }
+    
+    if let Some(subjects) = &book.subject {
+        let subjects_str = subjects.iter().take(5).cloned().collect::<Vec<String>>().join(", ");
+        println!("Subjects: {}", subjects_str);
+    }
+    
+    if let Some(first_sentence) = &book.first_sentence {
+        if let Some(sentence) = first_sentence.first() {
+            let desc = if sentence.len() > 200 {
+                format!("{}...", &sentence[..200])
+            } else {
+                sentence.clone()
+            };
+            println!("First Sentence: {}", desc);
+        }
+    }
+    
+    println!("========================================\n");
+}
+
+pub fn interactive_select_open_library_book(books: &[OpenLibraryBook]) -> Result<Option<&OpenLibraryBook>, Box<dyn std::error::Error>> {
+    let items: Vec<String> = books.iter().map(|book| {
+        let year = book.get_latest_publish_year()
+            .map(|y| y.to_string())
+            .or_else(|| book.get_latest_publish_date())
+            .unwrap_or_else(|| "Unknown year".to_string());
+        
+        format!("{} by {} ({})", 
+            book.get_full_title(), 
+            book.get_all_authors(),
+            year
+        )
+    }).collect();
+    
+    let mut items_with_cancel = items;
+    items_with_cancel.push("Cancel - don't add any book".to_string());
+    
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a book to add")
+        .items(&items_with_cancel)
+        .default(0)
+        .interact()?;
+    
+    if selection == items_with_cancel.len() - 1 {
+        // User selected cancel
+        Ok(None)
+    } else {
+        Ok(books.get(selection))
     }
 }
