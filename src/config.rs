@@ -145,10 +145,10 @@ impl Config {
             }
         }
         
-        // Check Google Books API key
-        if self.google_books.api_key.contains("your_") {
-            return Err("Google Books API key not configured".to_string());
-        }
+        // Google Books API key is optional for basic usage
+        // if self.google_books.api_key.contains("your_") {
+        //     return Err("Google Books API key not configured".to_string());
+        // }
         
         // Check Baserow configuration
         if self.baserow.api_token.contains("your_") {

@@ -91,7 +91,7 @@ Environment variables override YAML configuration values. This allows you to:
 
 ### Required API Keys
 
-- **Google Books API**: Get your key from [Google Cloud Console](https://console.cloud.google.com/)
+- **Google Books API**: Optional - works without API key for basic usage. Get key from [Google Cloud Console](https://console.cloud.google.com/) for higher rate limits
 - **Baserow API**: Generate a token in your Baserow account settings
 - **LLM Provider**: Choose one:
   - OpenAI: API key from [OpenAI Platform](https://platform.openai.com/)
@@ -109,7 +109,7 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 3. **CLI Structure**  
    Design `wcm add` command supporting `--isbn`, `--title`, and `--author`.
 
-[] 4. **Google Books API**  
+[✓] 4. **Google Books API**  
    Integrate primary book data fetching (FR-02).
 
 [] 5. **Open Library API**  
@@ -150,8 +150,8 @@ Environment variables override YAML configuration values. This allows you to:
 
 ## Next Steps
 
-1. Integrate primary API (Google Books)
-2. Implement Open Library fallback API
-3. Add interactive search result selection
+1. Implement Open Library fallback API
+2. Add interactive search result selection
+3. Implement cover image downloading and processing
 
 *Note: All LLM calls will strictly use existing Baserow categories (no new categories created).*
