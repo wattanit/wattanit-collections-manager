@@ -2,7 +2,6 @@ use reqwest;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::config::BaserowConfig;
-use std::io::Cursor;
 
 #[derive(Debug, Clone)]
 pub struct BaserowClient {
@@ -54,22 +53,25 @@ pub struct CoverImage {
     pub name: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct FileUploadRequest {
-    pub url: String,
-}
 
 #[derive(Debug, Deserialize)]
 pub struct FileUploadResponse {
+    #[allow(dead_code)]
     pub url: String,
     pub name: String,
+    #[allow(dead_code)]
     pub size: u64,
+    #[allow(dead_code)]
     pub mime_type: String,
+    #[allow(dead_code)]
     pub is_image: bool,
     #[serde(default)]
+    #[allow(dead_code)]
     pub image_width: Option<u32>,
     #[serde(default)]
+    #[allow(dead_code)]
     pub image_height: Option<u32>,
+    #[allow(dead_code)]
     pub uploaded_at: String,
 }
 
@@ -77,6 +79,7 @@ pub struct FileUploadResponse {
 pub struct CreatedEntry {
     pub id: u64,
     #[serde(flatten)]
+    #[allow(dead_code)]
     pub fields: HashMap<String, serde_json::Value>,
 }
 
@@ -269,45 +272,6 @@ impl BaserowClient {
         }
     }
 
-    pub async fn upload_file_via_url(&self, image_url: &str) -> Result<FileUploadResponse, BaserowError> {
-        println!("Uploading cover image from URL to Baserow...");
-        
-        let url = format!("{}/api/user-files/upload-via-url/", 
-            self.config.base_url.trim_end_matches('/')
-        );
-
-        let request_data = FileUploadRequest {
-            url: image_url.to_string(),
-        };
-
-        let response = self.client
-            .post(&url)
-            .header("Authorization", format!("Token {}", self.config.api_token))
-            .header("Content-Type", "application/json")
-            .json(&request_data)
-            .send()
-            .await?;
-
-        match response.status() {
-            reqwest::StatusCode::OK => {
-                let upload_response: FileUploadResponse = response.json().await
-                    .map_err(|e| BaserowError::InvalidResponse(format!("Failed to parse upload response: {}", e)))?;
-                
-                println!("Successfully uploaded cover image: {}", upload_response.name);
-                
-                Ok(upload_response)
-            }
-            reqwest::StatusCode::UNAUTHORIZED => Err(BaserowError::AuthenticationFailed),
-            status => {
-                let error_text = response.text().await.unwrap_or_default();
-                Err(BaserowError::InvalidResponse(format!(
-                    "Failed to upload file: HTTP {} - {}", 
-                    status, 
-                    error_text
-                )))
-            }
-        }
-    }
 
     pub async fn upload_file_direct(&self, image_data: Vec<u8>, filename: &str) -> Result<FileUploadResponse, BaserowError> {
         println!("Uploading cover image file directly to Baserow...");

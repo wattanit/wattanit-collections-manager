@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use dialoguer::{Select, theme::ColorfulTheme};
 use crate::config::Config;
 
@@ -172,6 +171,7 @@ impl OpenLibraryClient {
         Ok(search_response)
     }
 
+    #[allow(dead_code)]
     pub async fn get_book_details(&self, key: &str) -> Result<OpenLibraryBookDetails, Box<dyn std::error::Error>> {
         let url = format!("{}{}.json", self.base_url, key);
 
@@ -190,6 +190,7 @@ impl OpenLibraryClient {
         Ok(book_details)
     }
 
+    #[allow(dead_code)]
     pub async fn get_author(&self, key: &str) -> Result<OpenLibraryAuthor, Box<dyn std::error::Error>> {
         let url = format!("{}{}.json", self.base_url, key);
 
@@ -217,6 +218,7 @@ impl OpenLibraryBook {
         self.cover_i.map(|id| format!("https://covers.openlibrary.org/b/id/{}-L.jpg", id))
     }
 
+    #[allow(dead_code)]
     pub fn get_primary_author(&self) -> Option<String> {
         self.author_name.as_ref()?.first().cloned()
     }
@@ -249,6 +251,7 @@ impl OpenLibraryBook {
 }
 
 impl OpenLibraryBookDetails {
+    #[allow(dead_code)]
     pub fn get_description(&self) -> Option<String> {
         match &self.description {
             Some(OpenLibraryDescription::String(desc)) => Some(desc.clone()),
@@ -257,19 +260,23 @@ impl OpenLibraryBookDetails {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_cover_url(&self) -> Option<String> {
         self.covers.as_ref()?.first()
             .map(|id| format!("https://covers.openlibrary.org/b/id/{}-L.jpg", id))
     }
 
+    #[allow(dead_code)]
     pub fn get_isbn_13(&self) -> Option<String> {
         self.isbn_13.as_ref()?.first().cloned()
     }
 
+    #[allow(dead_code)]
     pub fn get_isbn_10(&self) -> Option<String> {
         self.isbn_10.as_ref()?.first().cloned()
     }
 
+    #[allow(dead_code)]
     pub fn get_full_title(&self) -> String {
         match &self.subtitle {
             Some(subtitle) => format!("{}: {}", self.title, subtitle),
@@ -324,6 +331,7 @@ pub async fn display_open_library_book_info(book: &OpenLibraryBook, _config: &Co
     println!("========================================\n");
 }
 
+#[allow(dead_code)]
 pub fn interactive_select_open_library_book(books: &[OpenLibraryBook]) -> Result<Option<&OpenLibraryBook>, Box<dyn std::error::Error>> {
     let items: Vec<String> = books.iter().map(|book| {
         let year = book.get_latest_publish_year()

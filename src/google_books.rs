@@ -178,6 +178,7 @@ impl GoogleBooksClient {
         Ok(books_response)
     }
 
+    #[allow(dead_code)]
     pub async fn search_by_title(&self, title: &str) -> Result<GoogleBooksResponse, Box<dyn std::error::Error>> {
         let query = format!("intitle:{}", title);
         let url = format!(
@@ -227,6 +228,7 @@ impl BookItem {
             .or_else(|| image_links.small_thumbnail.clone())
     }
 
+    #[allow(dead_code)]
     pub fn get_primary_author(&self) -> Option<String> {
         self.volume_info.authors.as_ref()?.first().cloned()
     }
@@ -290,6 +292,7 @@ pub fn display_google_book_info(book: &BookItem, _config: &Config) {
     println!("========================================\n");
 }
 
+#[allow(dead_code)]
 pub fn interactive_select_google_book(books: &[BookItem]) -> Result<Option<&BookItem>, Box<dyn std::error::Error>> {
     let items: Vec<String> = books.iter().map(|book| {
         format!("{} by {} ({})", 

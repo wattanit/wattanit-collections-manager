@@ -26,10 +26,15 @@ pub struct OpenAiClient {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct AnthropicClient {
+    #[allow(dead_code)]
     client: reqwest::Client,
+    #[allow(dead_code)]
     api_key: String,
+    #[allow(dead_code)]
     base_url: String,
+    #[allow(dead_code)]
     model: String,
 }
 
@@ -74,6 +79,7 @@ pub struct OpenAiChoice {
 pub enum LlmError {
     RequestFailed(reqwest::Error),
     InvalidResponse(String),
+    #[allow(dead_code)]
     ModelNotAvailable,
     ConfigurationError(String),
 }
