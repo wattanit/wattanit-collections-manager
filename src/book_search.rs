@@ -562,22 +562,32 @@ impl CombinedBookSearcher {
                 // Get the highest quality image available from Google Books
                 google_book.volume_info.image_links.as_ref().and_then(|links| {
                     // Prefer large, then medium, then small, then thumbnail
-                    links.large.as_ref()
+                    let base_url = links.large.as_ref()
                         .or(links.medium.as_ref())
                         .or(links.small.as_ref())
-                        .or(links.thumbnail.as_ref())
-                        .map(|url| {
-                            // Upgrade to HTTPS and remove zoom restriction for better quality
-                            url.replace("http://", "https://")
-                               .replace("&zoom=1", "&zoom=0")
-                               .replace("&edge=curl", "")
-                        })
+                        .or(links.thumbnail.as_ref())?;
+                    
+                    // Clean and optimize the URL - keep zoom=1 as it's required!
+                    let cleaned_url = base_url
+                        .replace("http://", "https://")   // Ensure HTTPS
+                        .replace("&edge=curl", "");      // Remove edge effects only
+                    
+                    if self.config.app.verbose {
+                        println!("Original Google Books URL: {}", base_url);
+                        println!("Cleaned URL: {}", cleaned_url);
+                    }
+                    
+                    Some(cleaned_url)
                 })
             }
             BookResult::OpenLibrary(ol_book) => {
                 // Generate Open Library cover URL if we have an ISBN
                 if let Some(isbn) = ol_book.get_best_isbn() {
-                    Some(format!("https://covers.openlibrary.org/b/isbn/{}-L.jpg", isbn))
+                    let url = format!("https://covers.openlibrary.org/b/isbn/{}-L.jpg", isbn);
+                    if self.config.app.verbose {
+                        println!("Open Library cover URL: {}", url);
+                    }
+                    Some(url)
                 } else {
                     None
                 }
@@ -586,29 +596,87 @@ impl CombinedBookSearcher {
     }
 
     async fn handle_cover_image_upload(&self, book: &BookResult) -> Vec<crate::baserow::CoverImage> {
-        match self.get_cover_image_url(book) {
-            Some(image_url) => {
-                if self.config.app.verbose {
-                    println!("Found cover image URL: {}", image_url);
+        // Try primary cover image URL
+        if let Some(image_url) = self.get_cover_image_url(book) {
+            if self.config.app.verbose {
+                println!("Found cover image URL: {}", image_url);
+            }
+            
+            // Try download + direct upload approach
+            match self.download_and_upload_image(&image_url, "cover.jpg").await {
+                Ok(upload_response) => {
+                    return vec![crate::baserow::CoverImage {
+                        name: upload_response.name,
+                    }];
                 }
-                
-                match self.baserow_client.upload_file_via_url(&image_url).await {
-                    Ok(upload_response) => {
-                        vec![crate::baserow::CoverImage {
-                            name: upload_response.name,
-                        }]
+                Err(e) => {
+                    eprintln!("⚠️  Failed to download/upload primary cover image: {}", e);
+                    
+                    // Try fallback for Google Books using Open Library if we have ISBN
+                    if let BookResult::Google(google_book) = book {
+                        if let Some(isbn) = google_book.get_isbn_13().or_else(|| google_book.get_isbn_10()) {
+                            let fallback_url = format!("https://covers.openlibrary.org/b/isbn/{}-L.jpg", isbn);
+                            if self.config.app.verbose {
+                                println!("Trying Open Library fallback: {}", fallback_url);
+                            }
+                            
+                            match self.download_and_upload_image(&fallback_url, "cover-fallback.jpg").await {
+                                Ok(upload_response) => {
+                                    println!("✅ Successfully uploaded cover using Open Library fallback");
+                                    return vec![crate::baserow::CoverImage {
+                                        name: upload_response.name,
+                                    }];
+                                }
+                                Err(fallback_e) => {
+                                    eprintln!("⚠️  Fallback download/upload also failed: {}", fallback_e);
+                                }
+                            }
+                        }
                     }
-                    Err(e) => {
-                        eprintln!("⚠️  Failed to upload cover image: {}", e);
-                        println!("📝 NOTE: Please manually upload the cover image to your book entry.");
-                        vec![]
+                    
+                    // Both primary and fallback failed
+                    println!("\n==================================================");
+                    println!("📝 IMPORTANT: Please manually upload the cover image");
+                    println!("   Primary URL: {}", image_url);
+                    if let BookResult::Google(google_book) = book {
+                        if let Some(isbn) = google_book.get_isbn_13().or_else(|| google_book.get_isbn_10()) {
+                            println!("   Fallback URL: https://covers.openlibrary.org/b/isbn/{}-L.jpg", isbn);
+                        }
                     }
+                    println!("==================================================\n");
+                    return vec![];
                 }
             }
-            None => {
-                println!("📝 NOTE: No cover image found. Please manually upload the cover image to your book entry.");
-                vec![]
-            }
+        } else {
+            println!("\n==================================================");
+            println!("📝 IMPORTANT: No cover image found");
+            println!("   Please manually upload a cover image to your book entry");
+            println!("==================================================\n");
+            vec![]
         }
+    }
+
+    async fn download_and_upload_image(&self, image_url: &str, filename: &str) -> Result<crate::baserow::FileUploadResponse, Box<dyn std::error::Error>> {
+        if self.config.app.verbose {
+            println!("Downloading image from: {}", image_url);
+        }
+        
+        // Download the image
+        let response = reqwest::get(image_url).await?;
+        
+        if !response.status().is_success() {
+            return Err(format!("Failed to download image: HTTP {}", response.status()).into());
+        }
+        
+        let image_data = response.bytes().await?;
+        
+        if self.config.app.verbose {
+            println!("Downloaded {} bytes, uploading to Baserow...", image_data.len());
+        }
+        
+        // Upload directly to Baserow
+        let upload_response = self.baserow_client.upload_file_direct(image_data.to_vec(), filename).await?;
+        
+        Ok(upload_response)
     }
 }
