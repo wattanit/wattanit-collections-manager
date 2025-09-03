@@ -498,6 +498,7 @@ impl CombinedBookSearcher {
             media_type: Some(if is_ebook { 3021 } else { 3020 }), // 3021 = Ebook, 3020 = Physical
             location: vec![], // Empty - to be filled manually by user
             cover: cover_images,
+            status: 3028, // Default to "In Place"
         };
 
         // Create the entry in Baserow

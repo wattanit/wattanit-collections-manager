@@ -138,11 +138,23 @@ impl LlmProvider {
     ) -> Result<String, LlmError> {
         let prompt = create_synopsis_prompt(book_info, target_words);
         
-        match self {
-            LlmProvider::Ollama(client) => client.generate_text(&prompt).await,
-            LlmProvider::OpenAi(client) => client.generate_text(&prompt).await,
-            LlmProvider::Anthropic(client) => client.generate_text(&prompt).await,
-        }
+        let response = match self {
+            LlmProvider::Ollama(client) => client.generate_text(&prompt).await?,
+            LlmProvider::OpenAi(client) => client.generate_text(&prompt).await?,
+            LlmProvider::Anthropic(client) => client.generate_text(&prompt).await?,
+        };
+        
+        // Clean up the response by removing redundant "Synopsis" prefix
+        let cleaned_response = response
+            .trim()
+            .strip_prefix("**SYNOPSIS**")
+            .or_else(|| response.strip_prefix("SYNOPSIS:"))
+            .or_else(|| response.strip_prefix("Synopsis:"))
+            .or_else(|| response.strip_prefix("**Synopsis**"))
+            .unwrap_or(&response)
+            .trim();
+        
+        Ok(cleaned_response.to_string())
     }
 }
 

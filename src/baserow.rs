@@ -46,6 +46,8 @@ pub struct MediaEntry {
     pub location: Vec<u64>, // Array of location IDs - left empty for manual entry
     #[serde(rename = "Cover", skip_serializing_if = "Vec::is_empty")]
     pub cover: Vec<CoverImage>, // Array of cover images
+    #[serde(rename = "Status")]
+    pub status: u64, // Status field (3028=In Place, 3029=Active, 3030=On Loan)
 }
 
 #[derive(Debug, Serialize)]
