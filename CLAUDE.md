@@ -93,6 +93,7 @@ Complete end-to-end book processing pipeline with full Baserow integration:
 - Full database entry creation with proper field mapping and media type classification
 - Working ebook vs physical book classification via --ebook CLI flag
 - Complete cover image handling with upload-via-url after user confirmation
+- QR code label generation for storage boxes with proper bitmap font rendering and configurable view IDs
 
-The application now provides a complete, production-ready book management system. All 16 implementation steps are finished with full end-to-end functionality from search through database entry creation with cover images.
+The application now provides a complete, production-ready book management system with physical storage organization. All 17 implementation steps are finished with full end-to-end functionality from search through database entry creation with cover images and storage labeling.
 - Do not use emoji, especially when writing documentation

@@ -28,6 +28,8 @@ pub struct BaserowConfig {
     pub database_id: u64,
     pub media_table_id: u64,
     pub categories_table_id: u64,
+    pub storage_table_id: u64,
+    pub storage_view_id: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -107,6 +109,14 @@ impl Config {
         
         if let Ok(table_id) = std::env::var("BASEROW_CATEGORIES_TABLE_ID") {
             cfg.baserow.categories_table_id = table_id.parse().unwrap_or(cfg.baserow.categories_table_id);
+        }
+        
+        if let Ok(table_id) = std::env::var("BASEROW_STORAGE_TABLE_ID") {
+            cfg.baserow.storage_table_id = table_id.parse().unwrap_or(cfg.baserow.storage_table_id);
+        }
+        
+        if let Ok(view_id) = std::env::var("BASEROW_STORAGE_VIEW_ID") {
+            cfg.baserow.storage_view_id = view_id.parse().unwrap_or(cfg.baserow.storage_view_id);
         }
         
         if let Ok(api_key) = std::env::var("OPENAI_API_KEY") {

@@ -7,12 +7,14 @@ mod book_search;
 mod baserow;
 mod web_search;
 mod llm;
+mod label;
 
 use config::Config;
 use google_books::GoogleBooksClient;
 use open_library::OpenLibraryClient;
 use book_search::CombinedBookSearcher;
 use baserow::BaserowClient;
+use label::LabelGenerator;
 
 #[derive(Parser)]
 #[command(name = "wcm")]
@@ -41,6 +43,13 @@ enum Commands {
     Test {
         #[arg(long, help = "Test Baserow connection")]
         baserow: bool,
+    },
+    Label {
+        #[arg(long, help = "Generate label by storage ID")]
+        storage_id: Option<u64>,
+        
+        #[arg(long, help = "Generate label by storage name")]
+        storage_name: Option<String>,
     },
 }
 
@@ -80,8 +89,9 @@ async fn main() {
     );
     let baserow_client = BaserowClient::new(config.baserow.clone());
 
-    // Create combined searcher
+    // Create combined searcher and label generator
     let searcher = CombinedBookSearcher::new(google_client, open_library_client, baserow_client.clone(), config.clone());
+    let label_generator = LabelGenerator::new(baserow_client.clone(), config.baserow.base_url.clone());
 
     match &cli.command {
         Commands::Add { isbn, title, author, ebook } => {
@@ -113,6 +123,27 @@ async fn main() {
                     eprintln!("Baserow connection test failed: {}", e);
                     std::process::exit(1);
                 }
+            }
+        }
+        Commands::Label { storage_id, storage_name } => {
+            if let Some(id) = storage_id {
+                let filename = format!("storage_label_{}.png", id);
+                let output_path = std::path::Path::new(&filename);
+                if let Err(e) = label_generator.generate_label_by_id(*id, config.baserow.storage_table_id, config.baserow.database_id, config.baserow.storage_view_id, output_path).await {
+                    eprintln!("Error generating label by ID: {}", e);
+                    std::process::exit(1);
+                }
+            } else if let Some(name) = storage_name {
+                let safe_name = name.replace(" ", "_").replace("/", "_");
+                let filename = format!("storage_label_{}.png", safe_name);
+                let output_path = std::path::Path::new(&filename);
+                if let Err(e) = label_generator.generate_label_by_name(name, config.baserow.storage_table_id, config.baserow.database_id, config.baserow.storage_view_id, output_path).await {
+                    eprintln!("Error generating label by name: {}", e);
+                    std::process::exit(1);
+                }
+            } else {
+                eprintln!("Error: Please provide either --storage-id OR --storage-name");
+                std::process::exit(1);
             }
         }
     }

@@ -49,6 +49,8 @@ The application supports two methods for configuration:
      database_id: 12345  # Your actual database ID
      media_table_id: 67890  # Your actual table ID
      categories_table_id: 11111  # Your actual categories table ID
+     storage_table_id: 709  # Your storage table ID
+     storage_view_id: 3153  # Your storage view ID for QR links
    
    # LLM provider (choose one: openai, anthropic, ollama)
    llm:
@@ -85,6 +87,8 @@ The application supports two methods for configuration:
    BASEROW_DATABASE_ID=12345
    BASEROW_MEDIA_TABLE_ID=67890
    BASEROW_CATEGORIES_TABLE_ID=11111
+   BASEROW_STORAGE_TABLE_ID=709
+   BASEROW_STORAGE_VIEW_ID=3153
    OPENAI_API_KEY=your_actual_openai_key
    ```
 
@@ -154,9 +158,12 @@ Environment variables override YAML configuration values. This allows you to:
 [✓] 16. **Cover Image Handling**  
     Download highest-res cover + upload to Baserow (FR-04).
 
+[✓] 17. **Storage Label Generation**  
+    Generate QR code labels for storage boxes with configurable view IDs (FR-09).
+
 ## Project Status
 
-✅ **COMPLETE** - All 16 implementation steps have been successfully completed!
+✅ **COMPLETE** - All 17 implementation steps have been successfully completed!
 
 The application now provides a fully functional, end-to-end book management system with:
 - Dual-API book search with intelligent fallback
@@ -165,6 +172,7 @@ The application now provides a fully functional, end-to-end book management syst
 - Pre-flight confirmation before database writes
 - Automatic cover image upload with fallback handling
 - Complete Baserow database integration
+- QR code label generation for physical storage organization
 
 ## Usage
 

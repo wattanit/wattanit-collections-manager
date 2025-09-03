@@ -24,6 +24,13 @@ pub struct Category {
     pub fields: HashMap<String, serde_json::Value>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Storage {
+    pub id: u64,
+    #[serde(flatten)]
+    pub fields: HashMap<String, serde_json::Value>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct MediaEntry {
     #[serde(rename = "Title")]
@@ -104,6 +111,14 @@ impl Category {
     }
 }
 
+impl Storage {
+    pub fn get_name(&self) -> Option<String> {
+        self.fields.get("Name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+    }
+}
+
 #[derive(Debug)]
 pub enum BaserowError {
     RequestFailed(reqwest::Error),
@@ -177,6 +192,31 @@ impl BaserowClient {
 
         println!("Found {} categories", response.results.len());
         Ok(response.results)
+    }
+
+    pub async fn fetch_storage_entries(&self) -> Result<Vec<Storage>, BaserowError> {
+        println!("Fetching storage entries from Baserow...");
+        
+        let response: BaserowResponse<Storage> = self
+            .make_request(&self.config.storage_table_id.to_string())
+            .await?;
+
+        println!("Found {} storage entries", response.results.len());
+        Ok(response.results)
+    }
+
+    pub async fn find_storage_by_id(&self, storage_id: u64) -> Result<Option<Storage>, BaserowError> {
+        let storage_entries = self.fetch_storage_entries().await?;
+        Ok(storage_entries.into_iter().find(|storage| storage.id == storage_id))
+    }
+
+    pub async fn find_storage_by_name(&self, storage_name: &str) -> Result<Option<Storage>, BaserowError> {
+        let storage_entries = self.fetch_storage_entries().await?;
+        Ok(storage_entries.into_iter().find(|storage| {
+            storage.get_name()
+                .map(|name| name.to_lowercase() == storage_name.to_lowercase())
+                .unwrap_or(false)
+        }))
     }
 
 
