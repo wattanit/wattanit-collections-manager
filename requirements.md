@@ -54,6 +54,14 @@ The CLI will create a new row in the specified Baserow table, correctly mapping 
 **FR-08: Pre-flight Confirmation**
 Before writing to the database, the CLI will display a summary of all collected and generated data and ask the user for a final confirmation `[y/N]`.
 
+---
+**FR-09: Storage Label Generation**
+The CLI will provide a new command `wcm label` to generate printable labels for physical storage boxes:
+* **By Storage ID:** `wcm label --storage-id 123`
+* **By Storage Name:** `wcm label --storage-name "Box A-1"`
+* **Label Content:** Each label will include the storage name and a QR code that links directly to the storage entry's Baserow page
+* **Output:** Generate PNG files ready for printing with standard label dimensions
+
 ***
 
 ## **3. Non-Functional Requirements**
@@ -80,4 +88,6 @@ The CLI must provide clear, step-by-step feedback to the user during its operati
     * **JSON/YAML Handling:** `serde`
     * **Async Runtime:** `tokio`
     * **Image Handling:** `image`
+    * **QR Code Generation:** `qrcode`
+    * **Font Rendering:** `rusttype` or `fontdue`
 * **Baserow API Endpoint for Row Creation:** `POST /api/database/rows/table/{table_id}/?user_field_names=true`

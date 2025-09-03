@@ -24,6 +24,8 @@ wcm add --isbn 9780345391803                                    # Add physical b
 wcm add --isbn 9780345391803 --ebook                           # Add ebook by ISBN
 wcm add --title "The Lord of the Rings" --author "J.R.R. Tolkien"  # Add book by title/author
 wcm test --baserow                                              # Test Baserow connection
+wcm label --storage-id 123                                     # Generate QR label by storage ID
+wcm label --storage-name "Box A-1"                             # Generate QR label by storage name
 ```
 
 ## Architecture Overview
@@ -37,7 +39,8 @@ The project follows a modular architecture with these key components:
 - **LLM Integration**: Modular interface supporting OpenAI/Claude/Ollama for:
   - Category selection from existing Baserow categories (3-5 selections)
   - Synopsis generation (150 words, spoiler-free) when API data is insufficient
-- **Image Processing**: Downloads highest-resolution covers using `image` crate (pending)
+- **Image Processing**: Downloads highest-resolution covers using `image` crate
+- **Label Generation**: QR code generation for storage box labels with PNG output
 - **Baserow Integration**: Complete database entry creation via REST API with media type classification
 
 ### Key Dependencies
@@ -46,6 +49,8 @@ The project follows a modular architecture with these key components:
 - `serde` - JSON/YAML serialization
 - `tokio` - Async runtime
 - `image` - Cover image processing
+- `qrcode` - QR code generation
+- `rusttype`/`fontdue` - Font rendering for labels
 - `dialoguer` - Interactive terminal selection menus
 
 ### Data Flow

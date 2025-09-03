@@ -13,6 +13,7 @@ A CLI tool to automate adding books to your personal Baserow library using publi
 - Pre-flight confirmation before database writes
 - Automatic cover image download and upload
 - Complete Baserow database integration
+- Generate printable QR code labels for storage boxes
 
 ## Technical Stack
 
@@ -21,6 +22,8 @@ A CLI tool to automate adding books to your personal Baserow library using publi
 - **HTTP**: `reqwest`
 - **Data Handling**: `serde`, `tokio`
 - **Image Processing**: `image`
+- **QR Code Generation**: `qrcode`
+- **Font Rendering**: `rusttype`/`fontdue`
 - **LLM Integration**: Modular (OpenAI/Claude/Ollama)
 - **Web Search**: DuckDuckGo API integration
 
@@ -177,6 +180,10 @@ wcm add --title "The Lord of the Rings" --author "J.R.R. Tolkien"
 
 # Test Baserow connection
 wcm test --baserow
+
+# Generate storage labels
+wcm label --storage-id 123
+wcm label --storage-name "Box A-1"
 ```
 
 *Note: All LLM calls will strictly use existing Baserow categories (no new categories created).*
